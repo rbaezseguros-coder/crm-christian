@@ -32,11 +32,24 @@ dialog{border:0;border-radius:18px;width:min(700px,calc(100% - 24px));padding:0;
 .priority-list{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .priority{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;cursor:pointer}
 .priority:hover{box-shadow:0 5px 18px #0000000d}
+.priority.active{outline:2px solid var(--navy);transform:translateY(-1px)}
 .priority .pnum{font-size:22px;font-weight:800}.priority .plabel{font-size:12px;color:var(--muted);margin-top:3px}
 .priority.danger .pnum{color:var(--danger)}.priority.warn .pnum{color:var(--warning)}
 .priority.info .pnum{color:var(--navy)}
 .section-title{font-size:15px;font-weight:800;margin:18px 0 9px}
-@media(max-width:800px){.priority-list{grid-template-columns:1fr}}
+@media(max-width:800px){
+  .priority-list{grid-template-columns:1fr}
+  header{padding:16px 14px 18px}
+  .head{align-items:center}
+  .brand{font-size:18px}
+  main{padding:12px}
+  .toolbar{gap:8px}
+  .toolbar input,.toolbar select{min-width:100%;flex-basis:100%}
+  .toolbar button{width:100%}
+  .actions{width:100%}
+  .actions a,.actions button{flex:1;text-align:center;min-height:42px}
+  .lead{padding:13px}
+}
 </style>
 </head>
 <body>
@@ -47,7 +60,10 @@ dialog{border:0;border-radius:18px;width:min(700px,calc(100% - 24px));padding:0;
 <section class="daily">
   <div class="daily-title">
     <h2>📋 Trabajo de hoy</h2>
-    <span id="dailyDate"></span>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <span id="dailyDate"></span>
+      <button type="button" class="secondary" id="clearQuickFilter" style="padding:7px 10px;font-size:12px">Ver todos</button>
+    </div>
   </div>
   <div class="priority-list">
     <div class="priority danger" id="dailyOverdue" data-filter="overdue">
@@ -188,7 +204,7 @@ window.registerContact=id=>{
   $('cotizacionEnviada').value=l['Cotización enviada']||'No';
   $('observaciones').value=l.Observaciones||'';
   $('dlg').showModal();
-  setTimeout(()=>$('proximoSeguimiento').focus(),80);
+  requestAnimationFrame(()=>$('proximoSeguimiento').focus());
 };
 
 window.editLead=id=>{
@@ -201,7 +217,18 @@ window.editLead=id=>{
   $('dlg').showModal();
 }
 
-$('newBtn').onclick=openNew;$('cancelBtn').onclick=()=>$('dlg').close();$('refreshBtn').onclick=load;
+$('newBtn').onclick=openNew;
+$('clearQuickFilter').onclick=()=>{quickFilter='';['Overdue','Today','New','Quote','Closed'].forEach(x=>$('card'+x).classList.remove('active'));['dailyOverdue','dailyToday','dailyNew'].forEach(x=>$(''+x).classList.remove('active'));render()};
+$('cancelBtn').onclick=()=>$('dlg').close();
+$('refreshBtn').onclick=async()=>{
+  if($('refreshBtn').disabled)return;
+  $('refreshBtn').disabled=true;
+  $('refreshBtn').textContent='↻ Cargando...';
+  try{await load()}finally{
+    $('refreshBtn').disabled=false;
+    $('refreshBtn').textContent='↻ Actualizar';
+  }
+};
 $('search').oninput=render;$('statusFilter').onchange=render;$('campaignFilter').onchange=render;
 document.querySelectorAll('.card').forEach(c=>c.onclick=()=>setQuickFilter(c.dataset.filter));
 document.querySelectorAll('.priority').forEach(c=>c.onclick=()=>setQuickFilter(c.dataset.filter));
@@ -241,3 +268,4 @@ $('leadForm').onsubmit=async e=>{
 load();
 </script>
 </body>
+</html>

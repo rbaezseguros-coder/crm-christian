@@ -25,12 +25,46 @@ dialog{border:0;border-radius:18px;width:min(700px,calc(100% - 24px));padding:0;
 .field input,.field select,.field textarea{padding:10px;border:1px solid var(--line);border-radius:9px;font:inherit}.field textarea{min-height:80px;resize:vertical}
 .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}.helper{font-size:11px;color:var(--muted);margin-top:2px}
 @media(max-width:800px){.cards{grid-template-columns:repeat(2,1fr)}.lead{grid-template-columns:1fr}.actions{justify-content:flex-start}.grid{grid-template-columns:1fr}.field.full{grid-column:auto}}
+
+.daily{margin:0 0 16px}
+.daily-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 10px}
+.daily-title h2{margin:0;font-size:18px}.daily-title span{font-size:12px;color:var(--muted)}
+.priority-list{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.priority{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;cursor:pointer}
+.priority:hover{box-shadow:0 5px 18px #0000000d}
+.priority .pnum{font-size:22px;font-weight:800}.priority .plabel{font-size:12px;color:var(--muted);margin-top:3px}
+.priority.danger .pnum{color:var(--danger)}.priority.warn .pnum{color:var(--warning)}
+.priority.info .pnum{color:var(--navy)}
+.section-title{font-size:15px;font-weight:800;margin:18px 0 9px}
+@media(max-width:800px){.priority-list{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <header><div class="head"><div><div class="brand">CRM CS · Leads</div><div class="sub">Seguimiento de campañas</div></div><button class="primary" id="newBtn">＋ Nuevo lead</button></div></header>
 
 <main>
+
+<section class="daily">
+  <div class="daily-title">
+    <h2>📋 Trabajo de hoy</h2>
+    <span id="dailyDate"></span>
+  </div>
+  <div class="priority-list">
+    <div class="priority danger" id="dailyOverdue" data-filter="overdue">
+      <div class="pnum" id="dailyOverdueCount">0</div>
+      <div class="plabel">Seguimientos vencidos</div>
+    </div>
+    <div class="priority warn" id="dailyToday" data-filter="today">
+      <div class="pnum" id="dailyTodayCount">0</div>
+      <div class="plabel">Seguimientos para hoy</div>
+    </div>
+    <div class="priority info" id="dailyNew" data-filter="new">
+      <div class="pnum" id="dailyNewCount">0</div>
+      <div class="plabel">Nuevos sin contactar</div>
+    </div>
+  </div>
+</section>
+
 <section class="cards">
   <div class="card alert" id="cardOverdue" data-filter="overdue"><div class="num" id="overdueCount">0</div><div class="lbl">Seguimientos vencidos</div></div>
   <div class="card" id="cardToday" data-filter="today"><div class="num" id="todayCount">0</div><div class="lbl">Para hoy</div></div>
@@ -46,6 +80,7 @@ dialog{border:0;border-radius:18px;width:min(700px,calc(100% - 24px));padding:0;
   <button class="secondary" id="refreshBtn">↻ Actualizar</button>
 </div>
 
+<div class="section-title" id="listTitle">Todos los leads</div>
 <section id="list" class="list"><div class="loading">Cargando leads...</div></section>
 </main>
 
@@ -101,14 +136,20 @@ function setQuickFilter(f){
  render();
 }
 function render(){
- const q=$('search').value.toLowerCase().trim(),sf=$('statusFilter').value,cf=$('campaignFilter').value,today=localDateString();
+ const today=localDateString();
+ $('dailyDate').textContent='Hoy · '+formatDate(today);
+ const q=$('search').value.toLowerCase().trim(),sf=$('statusFilter').value,cf=$('campaignFilter').value;
  let overdueN=0,todayN=0;
  leads.forEach(l=>{const d=dateOnly(l['Próximo seguimiento']);if(!d||!isOpenStatus(l.Estado))return;if(d<today)overdueN++;if(d===today)todayN++});
  $('overdueCount').textContent=overdueN;$('todayCount').textContent=todayN;
+ $('dailyOverdueCount').textContent=overdueN;$('dailyTodayCount').textContent=todayN;
+ $('dailyNewCount').textContent=leads.filter(l=>l.Estado==='Nuevo').length;
  $('newCount').textContent=leads.filter(l=>l.Estado==='Nuevo').length;
  $('quoteCount').textContent=leads.filter(l=>l.Estado==='Cotización enviada'||l['Cotización enviada']==='Sí').length;
  $('closedCount').textContent=leads.filter(l=>l.Estado==='Cerrado').length;
 
+ const titles={overdue:'🔴 Seguimientos vencidos',today:'🟠 Seguimientos para hoy',new:'🟡 Nuevos sin contactar',quote:'🔵 Cotizaciones enviadas',closed:'🟢 Cerrados'};
+ $('listTitle').textContent=quickFilter?titles[quickFilter]:'Todos los leads';
  const visible=leads.filter(l=>(!q||String(l.Nombre||'').toLowerCase().includes(q)||String(l.WhatsApp||'').includes(q))&&(!sf||l.Estado===sf)&&(!cf||l.Campaña===cf)&&matchesQuick(l));
  if(!visible.length){$('list').innerHTML='<div class="empty">No hay leads para mostrar.</div>';return}
  const sorted=[...visible].sort((a,b)=>{const da=dateOnly(a['Próximo seguimiento']),db=dateOnly(b['Próximo seguimiento']);if(!da&&!db)return 0;if(!da)return 1;if(!db)return -1;return da.localeCompare(db)});
@@ -137,6 +178,7 @@ window.editLead=id=>{
 $('newBtn').onclick=openNew;$('cancelBtn').onclick=()=>$('dlg').close();$('refreshBtn').onclick=load;
 $('search').oninput=render;$('statusFilter').onchange=render;$('campaignFilter').onchange=render;
 document.querySelectorAll('.card').forEach(c=>c.onclick=()=>setQuickFilter(c.dataset.filter));
+document.querySelectorAll('.priority').forEach(c=>c.onclick=()=>setQuickFilter(c.dataset.filter));
 
 $('leadForm').onsubmit=async e=>{
  e.preventDefault();const id=$('id').value;

@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0d1e76">
+<title>CRM CS — Leads</title>
+<style>
+:root{--navy:#0d1e76;--turq:#6ee6de;--violet:#815df2;--bg:#f5f7fb;--text:#172033;--muted:#667085;--card:#fff;--line:#e5e7eb}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text)}
+header{background:var(--navy);color:white;padding:22px 20px 26px;position:sticky;top:0;z-index:5}
+.head{max-width:1100px;margin:auto;display:flex;justify-content:space-between;align-items:center;gap:15px}.brand{font-weight:800;font-size:21px}.sub{font-size:12px;opacity:.8;margin-top:3px}
+main{max-width:1100px;margin:0 auto;padding:18px}
+.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px}.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px}.num{font-size:25px;font-weight:800}.lbl{font-size:12px;color:var(--muted);margin-top:4px}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}.toolbar input,.toolbar select{flex:1;min-width:180px;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:white}
+button{border:0;border-radius:10px;padding:11px 15px;font-weight:700;cursor:pointer}.primary{background:var(--navy);color:white}.secondary{background:white;border:1px solid var(--line);color:var(--text)}
+.list{display:grid;gap:10px}.lead{background:white;border:1px solid var(--line);border-radius:14px;padding:15px;display:grid;grid-template-columns:1fr auto;gap:10px}.lead h3{margin:0 0 5px;font-size:16px}.meta{color:var(--muted);font-size:13px}.tag{display:inline-block;padding:5px 8px;border-radius:999px;background:#eef2ff;font-size:11px;font-weight:700;margin:4px 4px 0 0}.overdue{color:#b42318;font-weight:800}.today{color:#b54708;font-weight:800}.actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end}.actions a{padding:9px 11px;border-radius:9px;background:#e9fbf9;color:#0d6b64;text-decoration:none;font-weight:700;font-size:13px}
+.empty{padding:35px;text-align:center;color:var(--muted);background:white;border-radius:14px;border:1px dashed var(--line)}
+dialog{border:0;border-radius:18px;width:min(680px,calc(100% - 24px));padding:0;box-shadow:0 20px 60px #0003}dialog::backdrop{background:#0006}.modal{padding:20px}.modal h2{margin:0 0 16px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field{display:flex;flex-direction:column;gap:6px}.field.full{grid-column:1/-1}.field label{font-size:12px;font-weight:700;color:var(--muted)}.field input,.field select,.field textarea{padding:10px;border:1px solid var(--line);border-radius:9px;font:inherit}.field textarea{min-height:80px;resize:vertical}.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+@media(max-width:800px){.cards{grid-template-columns:repeat(2,1fr)}.lead{grid-template-columns:1fr}.actions{justify-content:flex-start}.grid{grid-template-columns:1fr}.field.full{grid-column:auto}}
+</style>
+</head>
+<body>
+<header><div class="head"><div><div class="brand">CRM CS · Leads</div><div class="sub">Seguimiento de campañas</div></div><button class="primary" id="newBtn">＋ Nuevo lead</button></div></header>
+<main>
+<section class="cards">
+<div class="card"><div class="num" id="todayCount">0</div><div class="lbl">Seguimientos hoy</div></div>
+<div class="card"><div class="num" id="newCount">0</div><div class="lbl">Nuevos</div></div>
+<div class="card"><div class="num" id="quoteCount">0</div><div class="lbl">Cotizaciones</div></div>
+<div class="card"><div class="num" id="closedCount">0</div><div class="lbl">Cerrados</div></div>
+<div class="card"><div class="num" id="lostCount">0</div><div class="lbl">Perdidos</div></div>
+</section>
+<div class="toolbar">
+<input id="search" placeholder="🔎 Buscar nombre o WhatsApp...">
+<select id="statusFilter"><option value="">Todos los estados</option></select>
+<select id="campaignFilter"><option value="">Todas las campañas</option></select>
+<button class="secondary" id="refreshBtn">↻ Actualizar</button>
+</div>
+<section id="list" class="list"></section>
+</main>
+
+<dialog id="dlg"><form method="dialog" class="modal" id="leadForm">
+<h2 id="modalTitle">Nuevo lead</h2>
+<input type="hidden" id="id">
+<div class="grid">
+<div class="field"><label>Nombre</label><input id="nombre" required></div>
+<div class="field"><label>WhatsApp</label><input id="whatsapp" required inputmode="tel"></div>
+<div class="field"><label>Campaña</label><select id="campaña"></select></div>
+<div class="field"><label>Producto</label><select id="producto"></select></div>
+<div class="field"><label>Estado</label><select id="estado"></select></div>
+<div class="field"><label>Próximo seguimiento</label><input id="proximoSeguimiento" type="date"></div>
+<div class="field"><label>Compañía</label><input id="compania"></div>
+<div class="field"><label>Plan</label><input id="plan"></div>
+<div class="field"><label>Importe</label><input id="importe" inputmode="decimal"></div>
+<div class="field"><label>Cotización enviada</label><select id="cotizacionEnviada"><option>No</option><option>Sí</option></select></div>
+<div class="field full"><label>Observaciones</label><textarea id="observaciones"></textarea></div>
+</div>
+<div class="modal-actions"><button type="button" class="secondary" id="cancelBtn">Cancelar</button><button class="primary" type="submit">Guardar lead</button></div>
+</form></dialog>
+<script>
+const $=id=>document.getElementById(id);
+let leads=[], config={ESTADOS:[],PRODUCTOS:[],CAMPAÑAS:[]};
+
+async function api(path, options={}){const r=await fetch('/api/leads'+path,{headers:{'Content-Type':'application/json',...(options.headers||{})},...options});const d=await r.json();if(!r.ok||!d.ok)throw new Error(d.error||'Error');return d}
+function fillSelect(id,arr,placeholder){const s=$(id);s.innerHTML=''; if(placeholder)s.innerHTML='<option value="">'+placeholder+'</option>';arr.forEach(x=>{const o=document.createElement('option');o.value=x;o.textContent=x;s.appendChild(o)})}
+function isoToday(){return new Date().toISOString().slice(0,10)}
+function dateOnly(v){if(!v)return '';let s=String(v);if(s.includes('T'))s=s.slice(0,10);if(s.includes('/')){const p=s.split('/');if(p.length===3)return p[2]+'-'+String(p[1]).padStart(2,'0')+'-'+String(p[0]).padStart(2,'0')}return s.slice(0,10)}
+function wa(t){return 'https://wa.me/'+String(t||'').replace(/\D/g,'')}
+function render(){
+ const q=$('search').value.toLowerCase().trim(), sf=$('statusFilter').value, cf=$('campaignFilter').value;
+ const visible=leads.filter(l=>(!q||String(l.Nombre||'').toLowerCase().includes(q)||String(l.WhatsApp||'').includes(q))&&(!sf||l.Estado===sf)&&(!cf||l.Campaña===cf));
+ const today=isoToday(); let todayN=0;
+ leads.forEach(l=>{if(dateOnly(l['Próximo seguimiento'])===today)todayN++});
+ $('todayCount').textContent=todayN;$('newCount').textContent=leads.filter(l=>l.Estado==='Nuevo').length;
+ $('quoteCount').textContent=leads.filter(l=>l.Estado==='Cotización enviada'||l['Cotización enviada']==='Sí').length;
+ $('closedCount').textContent=leads.filter(l=>l.Estado==='Cerrado').length;$('lostCount').textContent=leads.filter(l=>l.Estado==='Perdido').length;
+ if(!visible.length){$('list').innerHTML='<div class="empty">No hay leads para mostrar.</div>';return}
+ $('list').innerHTML=visible.map(l=>{
+  const d=dateOnly(l['Próximo seguimiento']), overdue=d&&d<today&&l.Estado!=='Cerrado'&&l.Estado!=='Perdido';
+  const cls=d===today?'today':overdue?'overdue':'';
+  return `<article class="lead"><div><h3>${esc(l.Nombre||'Sin nombre')}</h3><div class="meta">${esc(l.WhatsApp||'')} · ${esc(l.Producto||'')} · ${esc(l.Campaña||'')}</div><span class="tag">${esc(l.Estado||'')}</span>${l.Compañía?`<span class="tag">${esc(l.Compañía)}${l.Plan?' · '+esc(l.Plan):''}</span>`:''}${l.Importe?`<span class="tag">$ ${esc(l.Importe)}</span>`:''}<div class="meta ${cls}" style="margin-top:8px">${d?'Seguimiento: '+formatDate(d):'Sin seguimiento programado'}</div></div><div class="actions"><a href="${wa(l.WhatsApp)}" target="_blank" rel="noopener">📱 WhatsApp</a><button class="secondary" onclick="editLead('${escAttr(l.ID)}')">✏️ Editar</button></div></article>`
+ }).join('');
+}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function escAttr(s){return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'")}
+function formatDate(d){const p=d.split('-');return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:d}
+function populate(){
+ fillSelect('estado',config.ESTADOS);fillSelect('producto',config.PRODUCTOS);fillSelect('campaña',config.CAMPAÑAS);
+ fillSelect('statusFilter',config.ESTADOS,'Todos los estados');fillSelect('campaignFilter',config.CAMPAÑAS,'Todas las campañas');
+}
+async function load(){try{const d=await api('?action=list');leads=d.leads||[];config=d.config||config;populate();render()}catch(e){$('list').innerHTML='<div class="empty">No se pudo conectar con el CRM: '+esc(e.message)+'</div>'}}
+function openNew(){ $('modalTitle').textContent='Nuevo lead';$('leadForm').reset();$('id').value='';$('estado').value='Nuevo';$('cotizacionEnviada').value='No';$('proximoSeguimiento').value=isoToday();$('dlg').showModal()}
+window.editLead=id=>{const l=leads.find(x=>String(x.ID)===String(id));if(!l)return;$('modalTitle').textContent='Editar lead';$('id').value=l.ID;$('nombre').value=l.Nombre||'';$('whatsapp').value=l.WhatsApp||'';$('campaña').value=l.Campaña||'';$('producto').value=l.Producto||'';$('estado').value=l.Estado||'';$('proximoSeguimiento').value=dateOnly(l['Próximo seguimiento']);$('compania').value=l.Compañía||'';$('plan').value=l.Plan||'';$('importe').value=l.Importe||'';$('cotizacionEnviada').value=l['Cotización enviada']||'No';$('observaciones').value=l.Observaciones||'';$('dlg').showModal()}
+$('newBtn').onclick=openNew;$('cancelBtn').onclick=()=>$('dlg').close();$('refreshBtn').onclick=load;$('search').oninput=render;$('statusFilter').onchange=render;$('campaignFilter').onchange=render;
+$('leadForm').onsubmit=async e=>{e.preventDefault();const lead={id:$('id').value,fechaIngreso:new Date().toISOString(),nombre:$('nombre').value,whatsapp:$('whatsapp').value,campaña:$('campaña').value,producto:$('producto').value,estado:$('estado').value,ultimoContacto:'',proximoSeguimiento:$('proximoSeguimiento').value,compania:$('compania').value,plan:$('plan').value,importe:$('importe').value,cotizacionEnviada:$('cotizacionEnviada').value,observaciones:$('observaciones').value};try{await api('',{method:'POST',body:JSON.stringify({accion:lead.id?'actualizar':'crear',lead})});$('dlg').close();await load()}catch(err){alert(err.message)}};
+load();
+</script>
+</body></html>

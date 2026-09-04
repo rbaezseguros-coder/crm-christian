@@ -202,16 +202,6 @@ window.editLead=id=>{
 }
 
 $('newBtn').onclick=openNew;$('cancelBtn').onclick=()=>$('dlg').close();$('refreshBtn').onclick=load;
-$('followToday').onclick=()=>{$('proximoSeguimiento').value=localDateString()};
-$('followTomorrow').onclick=()=>{const d=new Date();d.setDate(d.getDate()+1);$('proximoSeguimiento').value=localDateString(d)};
-$('followClear').onclick=()=>{$('proximoSeguimiento').value=''};
-$('estado').onchange=()=>{
-  if($('estado').value==='Contactado') $('ultimoContacto').value=localDateString();
-  if($('estado').value==='Cotización enviada'){
-    $('cotizacionEnviada').value='Sí';
-    setTimeout(()=>$('compania').focus(),50);
-  }
-};
 $('search').oninput=render;$('statusFilter').onchange=render;$('campaignFilter').onchange=render;
 document.querySelectorAll('.card').forEach(c=>c.onclick=()=>setQuickFilter(c.dataset.filter));
 document.querySelectorAll('.priority').forEach(c=>c.onclick=()=>setQuickFilter(c.dataset.filter));
@@ -251,4 +241,3 @@ $('leadForm').onsubmit=async e=>{
 load();
 </script>
 </body>
-</html>

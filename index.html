@@ -18,7 +18,7 @@ button{border:0;border-radius:10px;padding:11px 15px;font-weight:700;cursor:poin
 .list{display:grid;gap:10px}.lead{background:#fff;border:1px solid var(--line);border-radius:14px;padding:15px;display:grid;grid-template-columns:1fr auto;gap:10px}
 .lead h3{margin:0 0 5px;font-size:16px}.meta{color:var(--muted);font-size:13px}.tag{display:inline-block;padding:5px 8px;border-radius:999px;background:#eef2ff;font-size:11px;font-weight:700;margin:4px 4px 0 0}
 .overdue{color:var(--danger);font-weight:800}.today{color:var(--warning);font-weight:800}.actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
-.actions a{padding:9px 11px;border-radius:9px;background:#e9fbf9;color:#0d6b64;text-decoration:none;font-weight:700;font-size:13px}.empty{padding:35px;text-align:center;color:var(--muted);background:#fff;border-radius:14px;border:1px dashed var(--line)}
+.actions a{padding:9px 11px;border-radius:9px;background:#e9fbf9;color:#0d6b64;text-decoration:none;font-weight:700;font-size:13px}.actions .contact-btn{background:#f1f5ff;color:var(--navy)}.empty{padding:35px;text-align:center;color:var(--muted);background:#fff;border-radius:14px;border:1px dashed var(--line)}
 .loading{padding:25px;text-align:center;color:var(--muted)}
 dialog{border:0;border-radius:18px;width:min(700px,calc(100% - 24px));padding:0;box-shadow:0 20px 60px #0003}dialog::backdrop{background:#0006}.modal{padding:20px}.modal h2{margin:0 0 16px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field{display:flex;flex-direction:column;gap:6px}.field.full{grid-column:1/-1}.field label{font-size:12px;font-weight:700;color:var(--muted)}
@@ -155,7 +155,7 @@ function render(){
  const sorted=[...visible].sort((a,b)=>{const da=dateOnly(a['Próximo seguimiento']),db=dateOnly(b['Próximo seguimiento']);if(!da&&!db)return 0;if(!da)return 1;if(!db)return -1;return da.localeCompare(db)});
  $('list').innerHTML=sorted.map(l=>{
    const d=dateOnly(l['Próximo seguimiento']),overdue=d&&d<today&&isOpenStatus(l.Estado),todayClass=d===today?'today':'',overdueClass=overdue?'overdue':'';
-   return `<article class="lead"><div><h3>${esc(l.Nombre||'Sin nombre')}</h3><div class="meta">${esc(l.WhatsApp||'')}${l.Producto?' · '+esc(l.Producto):''}${l.Campaña?' · '+esc(l.Campaña):''}</div><span class="tag">${esc(l.Estado||'')}</span>${l.Compañía?`<span class="tag">${esc(l.Compañía)}${l.Plan?' · '+esc(l.Plan):''}</span>`:''}${l.Importe?`<span class="tag">$ ${esc(l.Importe)}</span>`:''}<div class="meta ${todayClass} ${overdueClass}" style="margin-top:8px">${d?'Seguimiento: '+formatDate(d):'Sin seguimiento programado'}</div>${l['Último contacto']?`<div class="meta">Último contacto: ${formatDate(dateOnly(l['Último contacto']))}</div>`:''}</div><div class="actions"><a href="${wa(l.WhatsApp)}" target="_blank" rel="noopener">📱 WhatsApp</a><button class="secondary" onclick="editLead('${escAttr(l.ID)}')">✏️ Editar</button></div></article>`;
+   return `<article class="lead"><div><h3>${esc(l.Nombre||'Sin nombre')}</h3><div class="meta">${esc(l.WhatsApp||'')}${l.Producto?' · '+esc(l.Producto):''}${l.Campaña?' · '+esc(l.Campaña):''}</div><span class="tag">${esc(l.Estado||'')}</span>${l.Compañía?`<span class="tag">${esc(l.Compañía)}${l.Plan?' · '+esc(l.Plan):''}</span>`:''}${l.Importe?`<span class="tag">$ ${esc(l.Importe)}</span>`:''}<div class="meta ${todayClass} ${overdueClass}" style="margin-top:8px">${d?'Seguimiento: '+formatDate(d):'Sin seguimiento programado'}</div>${l['Último contacto']?`<div class="meta">Último contacto: ${formatDate(dateOnly(l['Último contacto']))}</div>`:''}</div><div class="actions"><a href="${wa(l.WhatsApp)}" target="_blank" rel="noopener">📱 WhatsApp</a>${isOpenStatus(l.Estado)?`<button class="secondary contact-btn" onclick="registerContact('${escAttr(l.ID)}')">📞 Registrar contacto</button>`:""}<button class="secondary" onclick="editLead('${escAttr(l.ID)}')">✏️ Editar</button></div></article>`;
  }).join('');
 }
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
@@ -170,6 +170,27 @@ function openNew(){
   $('dlg').showModal();
 }
 
+window.registerContact=id=>{
+  const l=leads.find(x=>String(x.ID)===String(id));if(!l)return;
+  $('modalTitle').textContent='Registrar contacto';
+  $('id').value=l.ID||'';
+  $('fechaIngreso').value=l['Fecha ingreso']||'';
+  $('nombre').value=l.Nombre||'';
+  $('whatsapp').value=l.WhatsApp||'';
+  $('campaña').value=l.Campaña||'';
+  $('producto').value=l.Producto||'';
+  $('estado').value=l.Estado||'Contactado';
+  $('ultimoContacto').value=localDateString();
+  $('proximoSeguimiento').value='';
+  $('compania').value=l.Compañía||'';
+  $('plan').value=l.Plan||'';
+  $('importe').value=l.Importe||'';
+  $('cotizacionEnviada').value=l['Cotización enviada']||'No';
+  $('observaciones').value=l.Observaciones||'';
+  $('dlg').showModal();
+  setTimeout(()=>$('proximoSeguimiento').focus(),80);
+};
+
 window.editLead=id=>{
   const l=leads.find(x=>String(x.ID)===String(id));if(!l)return;
   originalStatus=l.Estado||'';
@@ -181,6 +202,16 @@ window.editLead=id=>{
 }
 
 $('newBtn').onclick=openNew;$('cancelBtn').onclick=()=>$('dlg').close();$('refreshBtn').onclick=load;
+$('followToday').onclick=()=>{$('proximoSeguimiento').value=localDateString()};
+$('followTomorrow').onclick=()=>{const d=new Date();d.setDate(d.getDate()+1);$('proximoSeguimiento').value=localDateString(d)};
+$('followClear').onclick=()=>{$('proximoSeguimiento').value=''};
+$('estado').onchange=()=>{
+  if($('estado').value==='Contactado') $('ultimoContacto').value=localDateString();
+  if($('estado').value==='Cotización enviada'){
+    $('cotizacionEnviada').value='Sí';
+    setTimeout(()=>$('compania').focus(),50);
+  }
+};
 $('search').oninput=render;$('statusFilter').onchange=render;$('campaignFilter').onchange=render;
 document.querySelectorAll('.card').forEach(c=>c.onclick=()=>setQuickFilter(c.dataset.filter));
 document.querySelectorAll('.priority').forEach(c=>c.onclick=()=>setQuickFilter(c.dataset.filter));
